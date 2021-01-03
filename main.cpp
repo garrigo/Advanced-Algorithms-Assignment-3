@@ -20,11 +20,11 @@ using namespace pipeline3D;
 
 
     int main() {
-        a=1;
+        a = 1;
         const int w=150;
         const int h=50;    
         my_shader shader;
-        Rasterizer<char> rasterizer(2);
+        Rasterizer<char> rasterizer;
         std::cout << "Number of worker-threads: " << rasterizer.workers.getMaxWorkers() << "\n";
         rasterizer.set_perspective_projection(-1,1,-1,1,1,2);
 
@@ -44,17 +44,17 @@ using namespace pipeline3D;
         Scene<char> scene;
         scene.view_={0.5f,0.0f,0.0f,0.7f,0.0f,0.5f,0.0f,0.7f,0.0f,0.0f,0.5f,0.9f,0.0f,0.0f,0.0f,1.0f};
         scene.add_object(Scene<char>::Object(std::move(mesh),shader));
-        // scene.add_object(Scene<char>::Object(std::move(mesh2),shader));
-        // scene.add_object(Scene<char>::Object(std::move(mesh3),shader));
-        // scene.add_object(Scene<char>::Object(std::move(mesh4),shader));
-        // scene.add_object(Scene<char>::Object(std::move(mesh5),shader));
-        // scene.add_object(Scene<char>::Object(std::move(mesh6),shader));
+        scene.add_object(Scene<char>::Object(std::move(mesh2),shader));
+        scene.add_object(Scene<char>::Object(std::move(mesh3),shader));
+        scene.add_object(Scene<char>::Object(std::move(mesh4),shader));
+        scene.add_object(Scene<char>::Object(std::move(mesh5),shader));
+        scene.add_object(Scene<char>::Object(std::move(mesh6),shader));
 
 
         
 
         auto start_time = std::chrono::high_resolution_clock::now();
-        for (int i=0; i!=1000; ++i) {
+        for (int i=0; i!=1; ++i) {
             scene.render(rasterizer);
         }
         auto end_time = std::chrono::high_resolution_clock::now();
@@ -76,6 +76,8 @@ using namespace pipeline3D;
         std::cout << '+';
         for (int j=0; j!=w; ++j) std::cout << '-';
         std::cout << "+\n";
+
+        
         return 0;
     }
 

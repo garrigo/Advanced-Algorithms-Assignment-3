@@ -340,21 +340,21 @@ namespace pipeline3D {
         	return v1*w + v2*(1.0f-w);
     	}
 
-		template<class Vertex, class Shader, class Interpolator, class PerspCorrector>
-		inline void parallel_fragment (int x, int y, int xl, int xr, const Vertex& vl, const Vertex& vr, float ndczl, float ndczr, float & w, float step, const float epsilon,
-                             Shader & shader, Interpolator & interpolate, PerspCorrector & perspective_correct){
-				// workers.public_mutex.lock();
-			    const float ndcz=interpolatef(ndczl,ndczr,w);
-            	if (!((z_buffer[y*width+x]+epsilon)<ndcz)){
-					Vertex p=interpolate(vl,vr,w);
-					perspective_correct(p);
-					target[y*width+x] = shader(p);
-					z_buffer[y*width+x]=ndcz;
-					w -= step;
-				}
-				// workers.public_mutex.unlock();
-				workers.removeWorker();
-		}
+		// template<class Vertex, class Shader, class Interpolator, class PerspCorrector>
+		// inline void parallel_fragment (int x, int y, int xl, int xr, const Vertex& vl, const Vertex& vr, float ndczl, float ndczr, float & w, float step, const float epsilon,
+        //                      Shader & shader, Interpolator & interpolate, PerspCorrector & perspective_correct){
+		// 		// workers.public_mutex.lock();
+		// 	    const float ndcz=interpolatef(ndczl,ndczr,w);
+        //     	if (!((z_buffer[y*width+x]+epsilon)<ndcz)){
+		// 			Vertex p=interpolate(vl,vr,w);
+		// 			perspective_correct(p);
+		// 			target[y*width+x] = shader(p);
+		// 			z_buffer[y*width+x]=ndcz;
+		// 			w -= step;
+		// 		}
+		// 		// workers.public_mutex.unlock();
+		// 		workers.removeWorker();
+		// }
 
         template<class Vertex, class Shader, class Interpolator, class PerspCorrector>
         void render_scanline( int y, int xl, int xr, const Vertex& vl, const Vertex& vr, float ndczl, float ndczr, float w, float step,

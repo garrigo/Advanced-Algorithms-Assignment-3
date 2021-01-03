@@ -150,12 +150,12 @@ public:
                 //Object level
                 rasterizer.workers.addWorker();
                 std::thread t_object (&Object::parallel_render, &o, std::ref(rasterizer), std::ref(view_));  
-                t_object.detach();
-                // threads.push_back(std::move(t_object));
+                // t_object.detach();
+                threads.push_back(std::move(t_object));
             }
-            // for (auto& t : threads){
-            //     t.join();
-            // }
+            for (auto& t : threads){
+                t.join();
+            }
         }
         else{
             for (auto& o : objects){
