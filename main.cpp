@@ -20,7 +20,7 @@ using namespace pipeline3D;
 
 
     int main() {
-        a = 1;
+        a = 2;
         const int w=150;
         const int h=50;    
         my_shader shader;
@@ -38,6 +38,12 @@ using namespace pipeline3D;
         std::vector<std::array<Vertex,3>> mesh4 = read_obj("cubeMod.obj");
         std::vector<std::array<Vertex,3>> mesh5 = read_obj("cubeMod.obj");
         std::vector<std::array<Vertex,3>> mesh6 = read_obj("cubeMod.obj");
+        std::vector<std::array<Vertex,3>> mesh7 = read_obj("cubeMod.obj");
+        std::vector<std::array<Vertex,3>> mesh8 = read_obj("cubeMod.obj");
+        std::vector<std::array<Vertex,3>> mesh9 = read_obj("cubeMod.obj");
+        std::vector<std::array<Vertex,3>> mesh10 = read_obj("cubeMod.obj");
+        std::vector<std::array<Vertex,3>> mesh11 = read_obj("cubeMod.obj");
+        std::vector<std::array<Vertex,3>> mesh12 = read_obj("cubeMod.obj");
 
 
    
@@ -49,12 +55,18 @@ using namespace pipeline3D;
         scene.add_object(Scene<char>::Object(std::move(mesh4),shader));
         scene.add_object(Scene<char>::Object(std::move(mesh5),shader));
         scene.add_object(Scene<char>::Object(std::move(mesh6),shader));
+        scene.add_object(Scene<char>::Object(std::move(mesh7),shader));
+        scene.add_object(Scene<char>::Object(std::move(mesh8),shader));
+        scene.add_object(Scene<char>::Object(std::move(mesh9),shader));
+        scene.add_object(Scene<char>::Object(std::move(mesh10),shader));
+        scene.add_object(Scene<char>::Object(std::move(mesh11),shader));
+        scene.add_object(Scene<char>::Object(std::move(mesh12),shader));
 
 
         
 
         auto start_time = std::chrono::high_resolution_clock::now();
-        for (int i=0; i!=1; ++i) {
+        for (int i=0; i!=10000; ++i) {
             scene.render(rasterizer);
         }
         auto end_time = std::chrono::high_resolution_clock::now();

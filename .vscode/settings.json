@@ -48,7 +48,17 @@
         "xutility": "cpp",
         "condition_variable": "cpp",
         "mutex": "cpp",
-        "atomic": "cpp"
+        "atomic": "cpp",
+        "*.tcc": "cpp",
+        "clocale": "cpp",
+        "cstdarg": "cpp",
+        "ctime": "cpp",
+        "cwctype": "cpp",
+        "deque": "cpp",
+        "unordered_map": "cpp",
+        "memory_resource": "cpp",
+        "optional": "cpp",
+        "string_view": "cpp"
     },
     "C_Cpp.errorSquiggles": "Enabled"
 }

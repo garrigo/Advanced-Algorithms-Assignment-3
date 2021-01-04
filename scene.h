@@ -22,7 +22,7 @@ public:
     
     Scene(): view_(Identity) {};
     std::array<float,16> view_;
-
+    // std::atomic<unsigned int> object_counter{0};
     class Object{
     public:
 
@@ -37,7 +37,8 @@ public:
 
         void render(Rasterizer<target_t>& rasterizer, const std::array<float,16>& view) {pimpl->render(rasterizer,view,world_);}
         void parallel_render(Rasterizer<target_t>& rasterizer, const std::array<float,16>& view) {
-            pimpl->render(rasterizer,view,world_); 
+            pimpl->render(rasterizer,view,world_);
+            // object_counter++;
             rasterizer.workers.removeWorker();
         }
         std::array<float,16> world_;
@@ -76,16 +77,7 @@ public:
                 if (a==2) {                  
                     std::vector<std::thread> threads;
                     int count = 0;
-                    // for(const auto& t : mesh_) {
-                    //     auto v1=t[0];
-                    //     auto v2=t[1];
-                    //     auto v3=t[2];
-                    //     transform(world,v1);
-                    //     transform(view,v1);
-                    //     transform(world,v2);
-                    //     transform(view,v2);
-                    //     transform(world,v3);
-                    //     transform(view,v3);
+
                         //POSSIBLE THREAD
                         //Triangle level
                     for (const auto& t : mesh_){
@@ -98,13 +90,11 @@ public:
                         count++;
                         // rasterizer.render_vertices(v1,v2,v3, shader_);
                     }
-                    // auto start_time = std::chrono::high_resolution_clock::now();
+
                     // for(auto& t: threads){
                     //     t.join();
                     // }
-                    // auto end_time = std::chrono::high_resolution_clock::now();
-                    // double elapsed_time = std::chrono::duration<double>(end_time-start_time).count();
-                    // std::cout << "Join time: " << elapsed_time << '\n';
+
                 }
                 else {
                     for(const auto& t : mesh_) {
@@ -150,12 +140,12 @@ public:
                 //Object level
                 rasterizer.workers.addWorker();
                 std::thread t_object (&Object::parallel_render, &o, std::ref(rasterizer), std::ref(view_));  
-                // t_object.detach();
-                threads.push_back(std::move(t_object));
+                t_object.detach();
+                // threads.push_back(std::move(t_object));
             }
-            for (auto& t : threads){
-                t.join();
-            }
+            // for (auto& t : threads){
+            //     t.join();
+            // }
         }
         else{
             for (auto& o : objects){
@@ -166,6 +156,7 @@ public:
 
 private:
     std::vector<Object> objects;
+    
 };
 
 
