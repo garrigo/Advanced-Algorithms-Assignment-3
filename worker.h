@@ -9,10 +9,9 @@
 #include<iostream>
 #include <chrono>
 
-
+// https://www.codeguru.com/cpp/sample_chapter/article.php/c13533/Why-Too-Many-Threads-Hurts-Performance-and-What-to-do-About-It.htm
+// https://www.reddit.com/r/cpp_questions/comments/5ih1g8/how_do_i_limit_the_number_of_threads_used_by/
 namespace pipeline3D {
-enum Parallelization {None = 0, Obj = 1, Triang = 2, Scanline =  3, Frag = 4};
-short int a;
 class Worker {
     private:
         std::atomic<unsigned int> used_workers_{0} ;

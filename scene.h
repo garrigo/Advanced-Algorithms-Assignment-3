@@ -37,9 +37,9 @@ public:
         void render(Rasterizer<target_t>& rasterizer, const std::array<float,16>& view) {pimpl->render(rasterizer,view,world_);}
         void parallel_render(Rasterizer<target_t>& rasterizer, const std::array<float,16>& view, Scene & scene) {
             pimpl->render(rasterizer,view,world_);
+            rasterizer.workers.removeWorker();
             scene.finished_objects++;
             scene.cv_.notify_one();
-            rasterizer.workers.removeWorker();
         }
         std::array<float,16> world_;
 

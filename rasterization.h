@@ -355,10 +355,10 @@ namespace pipeline3D {
         	for (; x!=std::min(width,xr+1); ++x) {
                 const float ndcz=interpolatef(ndczl,ndczr,w);
             	if ((z_buffer[y*width+x]+epsilon)<ndcz) continue;
-            	Vertex p=interpolate(vl,vr,w);
+				z_buffer[y*width+x]=ndcz;
+            	p=interpolate(vl,vr,w);
             	perspective_correct(p);
                 target[y*width+x] = shader(p);
-            	z_buffer[y*width+x]=ndcz;
             	w -= step;
         	}
 			// workers.removeWorker();
@@ -376,7 +376,6 @@ namespace pipeline3D {
 	
     	int width;
     	int height;
-	
 	
 
     	Target_t* target;
