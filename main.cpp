@@ -7,7 +7,7 @@ using namespace pipeline3D;
 #include<chrono>
 
 
-
+using namespace std;
 
 
 
@@ -20,12 +20,11 @@ using namespace pipeline3D;
 
 
     int main() {
-        a = 2;
         const int w=150;
-        const int h=50;    
+        const int h=50;
+
         my_shader shader;
         Rasterizer<char> rasterizer;
-        std::cout << "Number of worker-threads: " << rasterizer.workers.getMaxWorkers() << "\n";
         rasterizer.set_perspective_projection(-1,1,-1,1,1,2);
 
         std::vector<char> screen(w*h,'.');
@@ -33,48 +32,15 @@ using namespace pipeline3D;
 
 
         std::vector<std::array<Vertex,3>> mesh = read_obj("cubeMod.obj");
-        std::vector<std::array<Vertex,3>> mesh2 = read_obj("cubeMod.obj");
-        std::vector<std::array<Vertex,3>> mesh3 = read_obj("cubeMod.obj");
-        std::vector<std::array<Vertex,3>> mesh4 = read_obj("cubeMod.obj");
-        std::vector<std::array<Vertex,3>> mesh5 = read_obj("cubeMod.obj");
-        std::vector<std::array<Vertex,3>> mesh6 = read_obj("cubeMod.obj");
-        std::vector<std::array<Vertex,3>> mesh7 = read_obj("cubeMod.obj");
-        std::vector<std::array<Vertex,3>> mesh8 = read_obj("cubeMod.obj");
-        std::vector<std::array<Vertex,3>> mesh9 = read_obj("cubeMod.obj");
-        std::vector<std::array<Vertex,3>> mesh10 = read_obj("cubeMod.obj");
-        std::vector<std::array<Vertex,3>> mesh11 = read_obj("cubeMod.obj");
-        std::vector<std::array<Vertex,3>> mesh12 = read_obj("cubeMod.obj");
-
 
    
         Scene<char> scene;
         scene.view_={0.5f,0.0f,0.0f,0.7f,0.0f,0.5f,0.0f,0.7f,0.0f,0.0f,0.5f,0.9f,0.0f,0.0f,0.0f,1.0f};
         scene.add_object(Scene<char>::Object(std::move(mesh),shader));
-        scene.add_object(Scene<char>::Object(std::move(mesh2),shader));
-        scene.add_object(Scene<char>::Object(std::move(mesh3),shader));
-        scene.add_object(Scene<char>::Object(std::move(mesh4),shader));
-        scene.add_object(Scene<char>::Object(std::move(mesh5),shader));
-        scene.add_object(Scene<char>::Object(std::move(mesh6),shader));
-        scene.add_object(Scene<char>::Object(std::move(mesh7),shader));
-        scene.add_object(Scene<char>::Object(std::move(mesh8),shader));
-        scene.add_object(Scene<char>::Object(std::move(mesh9),shader));
-        scene.add_object(Scene<char>::Object(std::move(mesh10),shader));
-        scene.add_object(Scene<char>::Object(std::move(mesh11),shader));
-        scene.add_object(Scene<char>::Object(std::move(mesh12),shader));
+        scene.render(rasterizer);
 
-
-        
-
-        auto start_time = std::chrono::high_resolution_clock::now();
-        for (int i=0; i!=10000; ++i) {
-            scene.render(rasterizer);
-        }
-        auto end_time = std::chrono::high_resolution_clock::now();
-        double elapsed_time = std::chrono::duration<double>(end_time-start_time).count();
-        std::cout << "Total elapsed time: " << elapsed_time << '\n';
 
         // print out the screen with a frame around it
-        std::cout << "\n\n";
         std::cout << '+';
         for (int j=0; j!=w; ++j) std::cout << '-';
         std::cout << "+\n";
@@ -89,7 +55,6 @@ using namespace pipeline3D;
         for (int j=0; j!=w; ++j) std::cout << '-';
         std::cout << "+\n";
 
-        
         return 0;
     }
 
