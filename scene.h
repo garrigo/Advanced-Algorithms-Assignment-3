@@ -22,7 +22,6 @@ public:
     
     Scene(): view_(Identity) {};
     std::array<float,16> view_;
-    // std::atomic<unsigned int> object_counter{0};
     class Object{
     public:
 
@@ -57,61 +56,19 @@ public:
             concrete_Object_impl(Mesh &&mesh, Shader &&shader, Textures&&... textures ) :
                 mesh_(std::forward<Mesh>(mesh)), shader_(std::forward<Shader>(shader)), textures_(std::forward<Textures>(textures)...) {}
 
-            
-            void render_triangle(int count, Rasterizer<target_t>& rasterizer, const std::array<float,16>& view, const std::array<float,16>& world){
-                auto v1=mesh_[count][0];
-                auto v2=mesh_[count][1];
-                auto v3=mesh_[count][2];
-                transform(world,v1);
-                transform(view,v1);
-                transform(world,v2);
-                transform(view,v2);
-                transform(world,v3);
-                transform(view,v3);
-
-                rasterizer.render_vertices(v1,v2,v3, shader_);
-                
-                rasterizer.workers.removeWorker();
-            }
-
             void render(Rasterizer<target_t>& rasterizer, const std::array<float,16>& view, const std::array<float,16>& world) override {
-                if (a==2) {                  
-                    std::vector<std::thread> threads;
-                    int count = 0;
-
-                        //POSSIBLE THREAD
-                        //Triangle level
-                    for (const auto& t : mesh_){
-                        rasterizer.workers.addWorker();
-
-                        std::thread t_object (&concrete_Object_impl<Mesh, Shader, Textures...>::render_triangle, this, count, std::ref(rasterizer), std::ref(view), std::ref(world));
-                        // threads.push_back(std::move(t_object));
-                        t_object.detach();
-                    
-                        count++;
-                        // rasterizer.render_vertices(v1,v2,v3, shader_);
-                    }
-
-                    // for(auto& t: threads){
-                    //     t.join();
-                    // }
-
+                for(const auto& t : mesh_) {
+                    auto v1=t[0];
+                    auto v2=t[1];
+                    auto v3=t[2];
+                    transform(world,v1);
+                    transform(view,v1);
+                    transform(world,v2);
+                    transform(view,v2);
+                    transform(world,v3);
+                    transform(view,v3);
+                    rasterizer.render_vertices(v1,v2,v3, shader_);
                 }
-                else {
-                    for(const auto& t : mesh_) {
-                        auto v1=t[0];
-                        auto v2=t[1];
-                        auto v3=t[2];
-                        transform(world,v1);
-                        transform(view,v1);
-                        transform(world,v2);
-                        transform(view,v2);
-                        transform(world,v3);
-                        transform(view,v3);
-                        rasterizer.render_vertices(v1,v2,v3, shader_);
-                    }
-                }
-
             }
 
 
@@ -133,27 +90,20 @@ public:
     auto end() {return objects.end();}
 
     void render(Rasterizer<target_t>& rasterizer) {
-        if (a==1){
-            std::vector<std::thread> threads;
+        if (rasterizer.workers.getMaxWorkers() > 1){
             for (auto& o : objects) {
-                
                 //POSSIBLE THREAD
                 //Object level
                 rasterizer.workers.addWorker();
                 std::thread t_object (&Object::parallel_render, &o, std::ref(rasterizer), std::ref(view_), std::ref(*this));  
                 t_object.detach();
-                // threads.push_back(std::move(t_object));
             }
             unsigned int object_number = objects.size();
             std::unique_lock<std::mutex> lock(m_);
             cv_.wait(lock, [this, object_number]{return (finished_objects = object_number);});
             finished_objects = 0;
-
-            // for (auto& t : threads){
-            //     t.join();
-            // }
         }
-        else{
+        else {
             for (auto& o : objects){
                 o.render(rasterizer, view_);
             }

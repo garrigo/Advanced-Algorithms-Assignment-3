@@ -340,22 +340,6 @@ namespace pipeline3D {
         	return v1*w + v2*(1.0f-w);
     	}
 
-		// template<class Vertex, class Shader, class Interpolator, class PerspCorrector>
-		// inline void parallel_fragment (int x, int y, int xl, int xr, const Vertex& vl, const Vertex& vr, float ndczl, float ndczr, float & w, float step, const float epsilon,
-        //                      Shader & shader, Interpolator & interpolate, PerspCorrector & perspective_correct){
-		// 		// workers.public_mutex.lock();
-		// 	    const float ndcz=interpolatef(ndczl,ndczr,w);
-        //     	if (!((z_buffer[y*width+x]+epsilon)<ndcz)){
-		// 			Vertex p=interpolate(vl,vr,w);
-		// 			perspective_correct(p);
-		// 			target[y*width+x] = shader(p);
-		// 			z_buffer[y*width+x]=ndcz;
-		// 			w -= step;
-		// 		}
-		// 		// workers.public_mutex.unlock();
-		// 		workers.removeWorker();
-		// }
-
         template<class Vertex, class Shader, class Interpolator, class PerspCorrector>
         void render_scanline( int y, int xl, int xr, const Vertex& vl, const Vertex& vr, float ndczl, float ndczr, float w, float step,
                              Shader & shader, Interpolator & interpolate, PerspCorrector & perspective_correct) {
@@ -368,14 +352,7 @@ namespace pipeline3D {
 
 			//POSSIBLE THREAD
 			//Fragment level
-			std::vector<std::thread> threads;
         	for (; x!=std::min(width,xr+1); ++x) {
-
-				// workers.addWorker();
-                // std::thread t_object (&Rasterizer<Target_t>::template parallel_fragment<Vertex, Shader, Interpolator, PerspCorrector>,
-				// 	this, x,y, xl ,xr,std::ref(vl), std::ref(vr), ndczl, ndczr, std::ref(w), step, epsilon, std::ref(shader), std::ref(interpolate), std::ref(perspective_correct));
-				// threads.push_back(std::move(t_object));
-
                 const float ndcz=interpolatef(ndczl,ndczr,w);
             	if ((z_buffer[y*width+x]+epsilon)<ndcz) continue;
             	Vertex p=interpolate(vl,vr,w);
@@ -385,19 +362,16 @@ namespace pipeline3D {
             	w -= step;
         	}
 			// workers.removeWorker();
-			// for (auto & t : threads){
-			// 	t.join();
-			// }
     	}
 
 
         // template<class Vertex, class Shader, class Interpolator, class PerspCorrector>
         // inline void render_scanline( int y, int xl, int xr, const Vertex& vl, const Vertex& vr, float ndczl, float ndczr, float w, float step,
         //                      Shader & shader, Interpolator & interpolate, PerspCorrector & perspective_correct) {
-		// 		workers.addWorker();
-        //         std::thread t_object (&Rasterizer<Target_t>::template prender_scanline<Vertex, Shader, Interpolator, PerspCorrector>,
-		// 			this, y, xl ,xr,std::ref(vl), std::ref(vr), ndczl, ndczr, w, step,  std::ref(shader), std::ref(interpolate), std::ref(perspective_correct));
-		// 		t_object.detach();
+		// 	workers.addWorker();
+		// 	std::thread t_object (&Rasterizer<Target_t>::template prender_scanline<Vertex, Shader, Interpolator, PerspCorrector>,
+		// 		this, y, xl ,xr,std::ref(vl), std::ref(vr), ndczl, ndczr, w, step,  std::ref(shader), std::ref(interpolate), std::ref(perspective_correct));
+		// 	t_object.detach();
 		// }
 	
     	int width;

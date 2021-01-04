@@ -24,49 +24,28 @@ using namespace pipeline3D;
         const int w=150;
         const int h=50;    
         my_shader shader;
-        Rasterizer<char> rasterizer(3);
+        Rasterizer<char> rasterizer;
         std::cout << "Number of worker-threads: " << rasterizer.workers.getMaxWorkers() << "\n";
         rasterizer.set_perspective_projection(-1,1,-1,1,1,2);
 
         std::vector<char> screen(w*h,'.');
         rasterizer.set_target(w,h,&screen[0]);
 
-
-        std::vector<std::array<Vertex,3>> mesh = read_obj("cubeMod.obj");
-        std::vector<std::array<Vertex,3>> mesh2 = read_obj("cubeMod.obj");
-        std::vector<std::array<Vertex,3>> mesh3 = read_obj("cubeMod.obj");
-        std::vector<std::array<Vertex,3>> mesh4 = read_obj("cubeMod.obj");
-        std::vector<std::array<Vertex,3>> mesh5 = read_obj("cubeMod.obj");
-        std::vector<std::array<Vertex,3>> mesh6 = read_obj("cubeMod.obj");
-        std::vector<std::array<Vertex,3>> mesh7 = read_obj("cubeMod.obj");
-        std::vector<std::array<Vertex,3>> mesh8 = read_obj("cubeMod.obj");
-        std::vector<std::array<Vertex,3>> mesh9 = read_obj("cubeMod.obj");
-        std::vector<std::array<Vertex,3>> mesh10 = read_obj("cubeMod.obj");
-        std::vector<std::array<Vertex,3>> mesh11 = read_obj("cubeMod.obj");
-        std::vector<std::array<Vertex,3>> mesh12 = read_obj("cubeMod.obj");
-
+        std::vector<std::vector<std::array<Vertex,3>> > meshes;
+        for (int i=0; i< 100; i++)
+            meshes.push_back(read_obj("cubeMod.obj"));
 
    
         Scene<char> scene;
         scene.view_={0.5f,0.0f,0.0f,0.7f,0.0f,0.5f,0.0f,0.7f,0.0f,0.0f,0.5f,0.9f,0.0f,0.0f,0.0f,1.0f};
-        scene.add_object(Scene<char>::Object(std::move(mesh),shader));
-        scene.add_object(Scene<char>::Object(std::move(mesh2),shader));
-        scene.add_object(Scene<char>::Object(std::move(mesh3),shader));
-        scene.add_object(Scene<char>::Object(std::move(mesh4),shader));
-        scene.add_object(Scene<char>::Object(std::move(mesh5),shader));
-        scene.add_object(Scene<char>::Object(std::move(mesh6),shader));
-        scene.add_object(Scene<char>::Object(std::move(mesh7),shader));
-        scene.add_object(Scene<char>::Object(std::move(mesh8),shader));
-        scene.add_object(Scene<char>::Object(std::move(mesh9),shader));
-        scene.add_object(Scene<char>::Object(std::move(mesh10),shader));
-        scene.add_object(Scene<char>::Object(std::move(mesh11),shader));
-        scene.add_object(Scene<char>::Object(std::move(mesh12),shader));
+        for (auto& m : meshes)
+            scene.add_object(Scene<char>::Object(std::move(m),shader));
 
 
         
 
         auto start_time = std::chrono::high_resolution_clock::now();
-        for (int i=0; i!=10000; ++i) {
+        for (int i=0; i!=100; ++i) {
             scene.render(rasterizer);
         }
         auto end_time = std::chrono::high_resolution_clock::now();
