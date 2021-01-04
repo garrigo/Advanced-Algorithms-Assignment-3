@@ -394,7 +394,7 @@ namespace pipeline3D {
         // template<class Vertex, class Shader, class Interpolator, class PerspCorrector>
         // inline void render_scanline( int y, int xl, int xr, const Vertex& vl, const Vertex& vr, float ndczl, float ndczr, float w, float step,
         //                      Shader & shader, Interpolator & interpolate, PerspCorrector & perspective_correct) {
-		// 		// workers.addWorker();
+		// 		workers.addWorker();
         //         std::thread t_object (&Rasterizer<Target_t>::template prender_scanline<Vertex, Shader, Interpolator, PerspCorrector>,
 		// 			this, y, xl ,xr,std::ref(vl), std::ref(vr), ndczl, ndczr, w, step,  std::ref(shader), std::ref(interpolate), std::ref(perspective_correct));
 		// 		t_object.detach();

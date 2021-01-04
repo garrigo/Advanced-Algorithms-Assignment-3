@@ -20,11 +20,11 @@ using namespace pipeline3D;
 
 
     int main() {
-        a = 2;
+        a = 1;
         const int w=150;
         const int h=50;    
         my_shader shader;
-        Rasterizer<char> rasterizer;
+        Rasterizer<char> rasterizer(3);
         std::cout << "Number of worker-threads: " << rasterizer.workers.getMaxWorkers() << "\n";
         rasterizer.set_perspective_projection(-1,1,-1,1,1,2);
 

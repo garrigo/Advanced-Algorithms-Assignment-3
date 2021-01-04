@@ -36,9 +36,10 @@ public:
             pimpl(std::make_unique<concrete_Object_impl<Mesh,Shader,Textures...>>(std::forward<Mesh>(mesh), std::forward<Shader>(shader), std::forward<Textures>(textures)...)), world_(Identity) {}
 
         void render(Rasterizer<target_t>& rasterizer, const std::array<float,16>& view) {pimpl->render(rasterizer,view,world_);}
-        void parallel_render(Rasterizer<target_t>& rasterizer, const std::array<float,16>& view) {
+        void parallel_render(Rasterizer<target_t>& rasterizer, const std::array<float,16>& view, Scene & scene) {
             pimpl->render(rasterizer,view,world_);
-            // object_counter++;
+            scene.finished_objects++;
+            scene.cv_.notify_one();
             rasterizer.workers.removeWorker();
         }
         std::array<float,16> world_;
@@ -139,10 +140,15 @@ public:
                 //POSSIBLE THREAD
                 //Object level
                 rasterizer.workers.addWorker();
-                std::thread t_object (&Object::parallel_render, &o, std::ref(rasterizer), std::ref(view_));  
+                std::thread t_object (&Object::parallel_render, &o, std::ref(rasterizer), std::ref(view_), std::ref(*this));  
                 t_object.detach();
                 // threads.push_back(std::move(t_object));
             }
+            unsigned int object_number = objects.size();
+            std::unique_lock<std::mutex> lock(m_);
+            cv_.wait(lock, [this, object_number]{return (finished_objects = object_number);});
+            finished_objects = 0;
+
             // for (auto& t : threads){
             //     t.join();
             // }
@@ -153,10 +159,15 @@ public:
             }
         }
     }
+protected:
+    friend class Object;
+    std::mutex m_;
+    std::condition_variable cv_;
+    std::atomic<unsigned int> finished_objects{0} ;
 
 private:
     std::vector<Object> objects;
-    
+
 };
 
 
