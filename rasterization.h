@@ -25,7 +25,9 @@ namespace pipeline3D {
         	height=h;
         	target=t;
         	z_buffer.clear();
-            z_buffer.resize(w*h,1.0f);
+            z_buffer.resize(w*h);
+			for (int i = 0; i<w*h; i++)
+				z_buffer[i] = 1.0f;
 			m_.clear();
 			m_.resize(w*h);
     	}
@@ -353,44 +355,38 @@ namespace pipeline3D {
         	Vertex p;
         	int x=std::max(xl,0);
         	w += (xl-x)*step;
-			// std::lock_guard<std::recursive_mutex> lock(m_[y*width+x]);
 			//POSSIBLE THREAD
 			//Fragment level
         	for (; x!=std::min(width,xr+1); ++x) {
                 const float ndcz=interpolatef(ndczl,ndczr,w);
 				const size_t cell = y*width+x;
 			    // std::lock_guard<SpinLockMutex> lock(m_[cell]);
-				// std::lock_guard<std::mutex> lock(m_[cell]);
 
-            	if ((z_buffer[cell]+epsilon)<ndcz) continue;
-				z_buffer[cell]=ndcz;
-				// lock.~lock_guard();
+				// z_buffer[cell].exchange( (((z_buffer[cell].load() + epsilon) < ndcz) ? z_buffer[cell].load() : ndcz), std::memory_order_relaxed);
+				// if (z_buffer[cell].load() == ndcz)
+				// {
+				// 	p=interpolate(vl,vr,w);
+				// 	perspective_correct(p);
+				// 	target[cell] = shader(p);
+				// 	w -= step;
+				// }
+            	if ((z_buffer[cell].load()+epsilon)<ndcz) continue;
+				z_buffer[cell].store(ndcz);
             	p=interpolate(vl,vr,w);
             	perspective_correct(p);
                 target[cell] = shader(p);
-            	w -= step;
+            	w -= step;				
         	}
 			// workers.removeWorker();
     	}
 
-
-        // template<class Vertex, class Shader, class Interpolator, class PerspCorrector>
-        // inline void render_scanline( int y, int xl, int xr, const Vertex& vl, const Vertex& vr, float ndczl, float ndczr, float w, float step,
-        //                      Shader & shader, Interpolator & interpolate, PerspCorrector & perspective_correct) {
-		// 	workers.addWorker();
-		// 	std::thread t_object (&Rasterizer<Target_t>::template prender_scanline<Vertex, Shader, Interpolator, PerspCorrector>,
-		// 		this, y, xl ,xr,std::ref(vl), std::ref(vr), ndczl, ndczr, w, step,  std::ref(shader), std::ref(interpolate), std::ref(perspective_correct));
-		// 	t_object.detach();
-		// }
 	
     	int width;
     	int height;
-		std::mutex m1;
+
 	    std::deque<SpinLockMutex> m_;
-        std::condition_variable cv_;
-		bool flag{true};
     	Target_t* target;
-        std::vector<float> z_buffer;
+        std::deque<std::atomic<float>> z_buffer;
 	};
 	
 }//pipeline3D

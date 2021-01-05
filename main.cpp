@@ -23,7 +23,7 @@ using namespace pipeline3D;
         const int w=150;
         const int h=50;    
         my_shader shader;
-        Rasterizer<char> rasterizer(1);
+        Rasterizer<char> rasterizer(10);
         std::cout << "Number of worker-threads: " << rasterizer.workers.getMaxWorkers() << "\n";
         rasterizer.set_perspective_projection(-1,1,-1,1,1,2);
 
@@ -31,10 +31,10 @@ using namespace pipeline3D;
         rasterizer.set_target(w,h,&screen[0]);
 
         std::vector<std::vector<std::array<Vertex,3>> > meshes;
-        for (int i=0; i< 1; i++)
+        for (int i=0; i< 250; i++){
             meshes.push_back(read_obj("cubeMod.obj"));
-        meshes.push_back(read_obj("cube2.obj"));
-
+            meshes.push_back(read_obj("cube2.obj"));
+        }
    
         Scene<char> scene;
         scene.view_={0.5f,0.0f,0.0f,0.7f,0.0f,0.5f,0.0f,0.7f,0.0f,0.0f,0.5f,0.9f,0.0f,0.0f,0.0f,1.0f};
@@ -43,9 +43,9 @@ using namespace pipeline3D;
 
 
         
-
+        std::cout << "BEGINNING RENDER ...\n";
         auto start_time = std::chrono::high_resolution_clock::now();
-        for (int i=0; i!=10000; ++i) {
+        for (int i=0; i!=100; ++i) {
             scene.render(rasterizer);
         }
         auto end_time = std::chrono::high_resolution_clock::now();
