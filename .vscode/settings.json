@@ -58,7 +58,8 @@
         "unordered_map": "cpp",
         "memory_resource": "cpp",
         "optional": "cpp",
-        "string_view": "cpp"
+        "string_view": "cpp",
+        "shared_mutex": "cpp"
     },
     "C_Cpp.errorSquiggles": "Enabled"
 }

@@ -5,6 +5,7 @@
 #include<vector>
 #include<array>
 #include<type_traits>
+#include <deque>
 #include "worker.h"
 
 namespace pipeline3D {
@@ -24,7 +25,9 @@ namespace pipeline3D {
         	height=h;
         	target=t;
         	z_buffer.clear();
-                z_buffer.resize(w*h,1.0f);
+            z_buffer.resize(w*h,1.0f);
+			m_.clear();
+			m_.resize(w*h);
     	}
 
 		inline void setMaxWorkers (unsigned int max){
@@ -323,7 +326,8 @@ namespace pipeline3D {
 	
 	
 	private:
-	
+
+
     	float ndc2idxf(float ndc, int range) { return (ndc+1.0f)*(range-1)/2.0f; }
 	
         void project(std::array<float,3> &ndc) {
@@ -349,16 +353,21 @@ namespace pipeline3D {
         	Vertex p;
         	int x=std::max(xl,0);
         	w += (xl-x)*step;
-
+			// std::lock_guard<std::recursive_mutex> lock(m_[y*width+x]);
 			//POSSIBLE THREAD
 			//Fragment level
         	for (; x!=std::min(width,xr+1); ++x) {
                 const float ndcz=interpolatef(ndczl,ndczr,w);
-            	if ((z_buffer[y*width+x]+epsilon)<ndcz) continue;
-				z_buffer[y*width+x]=ndcz;
+				const size_t cell = y*width+x;
+			    // std::lock_guard<SpinLockMutex> lock(m_[cell]);
+				// std::lock_guard<std::mutex> lock(m_[cell]);
+
+            	if ((z_buffer[cell]+epsilon)<ndcz) continue;
+				z_buffer[cell]=ndcz;
+				// lock.~lock_guard();
             	p=interpolate(vl,vr,w);
             	perspective_correct(p);
-                target[y*width+x] = shader(p);
+                target[cell] = shader(p);
             	w -= step;
         	}
 			// workers.removeWorker();
@@ -376,8 +385,10 @@ namespace pipeline3D {
 	
     	int width;
     	int height;
-	
-
+		std::mutex m1;
+	    std::deque<SpinLockMutex> m_;
+        std::condition_variable cv_;
+		bool flag{true};
     	Target_t* target;
         std::vector<float> z_buffer;
 	};
