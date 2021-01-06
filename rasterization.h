@@ -342,7 +342,7 @@ namespace pipeline3D {
                 ndc[2]=z/w;
     	}
 	
-        float interpolatef(float v1, float v2, float w) {
+        inline float interpolatef(float v1, float v2, float w) {
         	return v1*w + v2*(1.0f-w);
     	}
 
@@ -360,7 +360,7 @@ namespace pipeline3D {
         	for (; x!=std::min(width,xr+1); ++x) {
                 const float ndcz=interpolatef(ndczl,ndczr,w);
 				const size_t cell = y*width+x;
-			    // std::lock_guard<SpinLockMutex> lock(m_[cell]);
+			    std::lock_guard<SpinLockMutex> lock(m_[cell]);
 
 				// z_buffer[cell].exchange( (((z_buffer[cell].load() + epsilon) < ndcz) ? z_buffer[cell].load() : ndcz), std::memory_order_relaxed);
 				// if (z_buffer[cell].load() == ndcz)
@@ -370,14 +370,13 @@ namespace pipeline3D {
 				// 	target[cell] = shader(p);
 				// 	w -= step;
 				// }
-            	if ((z_buffer[cell].load()+epsilon)<ndcz) continue;
-				z_buffer[cell].store(ndcz);
+            	if ((z_buffer[cell]+epsilon)<ndcz) continue;
+				z_buffer[cell] = ndcz;
             	p=interpolate(vl,vr,w);
             	perspective_correct(p);
                 target[cell] = shader(p);
             	w -= step;				
         	}
-			// workers.removeWorker();
     	}
 
 	
@@ -386,7 +385,8 @@ namespace pipeline3D {
 
 	    std::deque<SpinLockMutex> m_;
     	Target_t* target;
-        std::deque<std::atomic<float>> z_buffer;
+        // std::deque<std::atomic<float>> z_buffer;
+		std::vector<float> z_buffer;
 	};
 	
 }//pipeline3D

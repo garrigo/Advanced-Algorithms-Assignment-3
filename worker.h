@@ -55,7 +55,7 @@ class Worker {
             std::unique_lock<std::mutex> lock(m_);
             cv_.wait(lock, [this]{return (used_workers_ < max_workers_);});
             // used_workers_++;
-            used_workers_.fetch_add(1, std::memory_order_release);
+            used_workers_.fetch_add(1, std::memory_order_consume);
             // std::cout << "ADDED WORKER, used : " << used_workers_ << "\n";
         }
         inline void removeWorker(){
