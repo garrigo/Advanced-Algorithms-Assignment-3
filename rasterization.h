@@ -16,24 +16,30 @@ namespace pipeline3D {
 	class Rasterizer {
 	public:
 	    std::array<float,16> projection_matrix;
-		Worker workers;
+		//WorkerHandler instance in the rasterizer
+		WorkerHandler worker_handler;
 		Rasterizer<Target_t> () = default;
-		Rasterizer<Target_t> (const Worker& wr) : workers(wr){}
+		Rasterizer<Target_t> (const WorkerHandler& wr) : worker_handler(wr){}
 
     	void set_target(int w, int h, Target_t* t) {
         	width=w;
         	height=h;
         	target=t;
         	z_buffer.clear();
-            z_buffer.resize(w*h);
-			for (int i = 0; i<w*h; i++)
-				z_buffer[i] = 1.0f;
+            z_buffer.resize(w*h, 1.0f);
+			// for (int i = 0; i<w*h; i++)
+			// 	z_buffer[i] = 1.0f;
+			//Setting the std::deque of mutex according to the size of z buffer
 			zbuffer_mutex.clear();
 			zbuffer_mutex.resize(w*h);
     	}
-
+		//Wrapper to get max workers from the WorkerHandler instance
+		inline unsigned int getMaxWorkers () {
+			return worker_handler.getMaxWorkers();
+		}
+		//Wrapper to modify the worker instance directly from the rasterizer object
 		inline void forceMaxWorkers (unsigned int max){
-			workers.forceMaxWorkers(max);
+			worker_handler.forceMaxWorkers(max);
 		}
 	
     	std::vector<Target_t> get_z_buffer() { return std::move(z_buffer); }
@@ -356,22 +362,16 @@ namespace pipeline3D {
 
         	for (; x!=std::min(width,xr+1); ++x) {
                 const float ndcz=interpolatef(ndczl,ndczr,w);
-				const size_t cell = y*width+x;
+				const unsigned int cell = y*width+x;
+				//Only critical section of the code, 2 or more threads could read and/or write a z_buffer[cell] with a non-synchronized value
+				//target[cell] is affected too, must be synchronized
 			    std::lock_guard<SpinLockMutex> lock(zbuffer_mutex[cell]);
             	if ((z_buffer[cell]+epsilon)<ndcz) continue;
 				z_buffer[cell] = ndcz;
             	p=interpolate(vl,vr,w);
             	perspective_correct(p);
                 target[cell] = shader(p);
-            	w -= step;
-				// z_buffer[cell].exchange( (((z_buffer[cell].load() + epsilon) < ndcz) ? z_buffer[cell].load() : ndcz), std::memory_order_relaxed);
-				// if (z_buffer[cell].load() == ndcz)
-				// {
-				// 	p=interpolate(vl,vr,w);
-				// 	perspective_correct(p);
-				// 	target[cell] = shader(p);
-				// 	w -= step;
-				// }				
+            	w -= step;				
         	}
     	}
 
@@ -379,10 +379,12 @@ namespace pipeline3D {
     	int width;
     	int height;
 
+		//Deque of mutex with same size as z buffer to lock only the z buffer cell that is used at that moment
+		//Could not use std::vector with mutex, std::deque works and has O(1) access operator [] like std::vector
+		//Mutex used is a custom SpinLock, slightly better than the std::mutex in some scenarios
 	    std::deque<SpinLockMutex> zbuffer_mutex;
     	Target_t* target;
 		std::vector<float> z_buffer;
-		// std::deque<std::atomic<float>> z_buffer;
 	};
 	
 }//pipeline3D

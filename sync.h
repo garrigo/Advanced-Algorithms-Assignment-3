@@ -9,7 +9,7 @@
 #include <iostream>
 
 namespace pipeline3D {
-
+    //Custom Mutex, slightly more efficient when used in the fragment computation
     class SpinLockMutex {
         public:
             SpinLockMutex () { f_ .clear(); }
@@ -20,43 +20,47 @@ namespace pipeline3D {
     };	    
 
     const unsigned int max_hardware = std::thread::hardware_concurrency();
-    class Worker {
+
+    //Class that handles available worker-threads according to the user-defined maximum workers
+    class WorkerHandler {
         private:
-            std::atomic<unsigned int> used_workers {0};
+
+            unsigned int used_workers {0};
             unsigned int max_workers {max_hardware};
             std::mutex worker_mutex;
             std::condition_variable worker_cv;
 
         public:
 
-            std::mutex public_mutex;
-            Worker () = default;
-            Worker (unsigned int max) {
+            WorkerHandler () = default;
+            WorkerHandler (unsigned int max) {
                 used_workers = 0;
                 if (max < max_hardware)
                     max_workers = max;    
                 else 
                     max_workers = max_hardware;
             }
-            Worker(const Worker & wr) : max_workers(wr.max_workers) {}
+            WorkerHandler(const WorkerHandler & wr) : max_workers(wr.max_workers) {}
 
             inline unsigned int getMaxWorkers () {
                 return max_workers;
             }
+            //Method that allows to force the maximum number of workers despite the hardware limit of physical threads
             inline void forceMaxWorkers (const unsigned int w){
                 if (w > max_hardware)
-                    std::cout << "WARNING! OPTIMAL NUMBER OF WORKER-THREADS: " << max_hardware << "\n";
+                    std::cout << "WARNING! Optimal number of worker-threads: " << max_hardware << "\n";
                 max_workers = w;
             }
-
+            //Waits for a free worker slot if the used workers counter is equal to the maximum number of workers; when released increments the former atomically (worker mutex)
             inline void addWorker(){
                 std::unique_lock<std::mutex> lock(worker_mutex);
                 worker_cv.wait(lock, [this]{return (used_workers < max_workers);});
-                used_workers.fetch_add(1, std::memory_order_consume);
+                used_workers++;
             }
+            //Locks the worker mutex, decrements the used workers counter and notifies an addWorker() to release it via condition variable
             inline void removeWorker(){
                 std::lock_guard<std::mutex> lock(worker_mutex);
-                used_workers.fetch_sub(1, std::memory_order_release);
+                used_workers--;
                 worker_cv.notify_one();
             }
 

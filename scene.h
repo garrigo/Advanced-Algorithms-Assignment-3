@@ -29,11 +29,17 @@ public:
         template<class Mesh,  class Shader, class... Textures>
         Object(Mesh &&mesh, Shader&& shader, Textures&&... textures) :
             pimpl(std::make_unique<concrete_Object_impl<Mesh,Shader,Textures...>>(std::forward<Mesh>(mesh), std::forward<Shader>(shader), std::forward<Textures>(textures)...)), world_(Identity) {}
-
+        
+        //Old render method, launched by the single-threaded version
         void render(Rasterizer<target_t>& rasterizer, const std::array<float,16>& view) {pimpl->render(rasterizer,view,world_);}
+
+        //Render method launched by the multi-threaded version (n° user-defined workers > 1) inside a thread
         void parallel_render(Rasterizer<target_t>& rasterizer, const std::array<float,16>& view, Scene & scene) {
             pimpl->render(rasterizer,view,world_);
-            rasterizer.workers.removeWorker();
+            //Thread decrements used workers guard by 1 and notifies a waiting worker-thread
+            rasterizer.worker_handler.removeWorker();
+            //Thread increments finished objects counter and notifies the main thread
+            std::lock_guard<std::mutex> lock(scene.scene_mutex);
             scene.finished_objects++;
             scene.scene_cv.notify_one();
         }
@@ -86,18 +92,23 @@ public:
     auto end() {return objects.end();}
 
     void render(Rasterizer<target_t>& rasterizer) {
-        if (rasterizer.workers.getMaxWorkers() > 1){
+        //Version dispatcher: if the number of user-defined workers is greater than 1, the multi-threaded version in launched
+        if (rasterizer.worker_handler.getMaxWorkers() > 1){
             for (auto& o : objects) {
                 //Object level multithreading
-                rasterizer.workers.addWorker();
-                std::thread t_object (&Object::parallel_render, &o, std::ref(rasterizer), std::ref(view_), std::ref(*this));  
+                //If the worker handler of the rasterizer has reached full capacity of workers, addWorker waits for a removeWorker (above) to free a worker slot and a new thread can be created
+                rasterizer.worker_handler.addWorker();
+                std::thread t_object (&Object::parallel_render, &o, std::ref(rasterizer), std::ref(view_), std::ref(*this)); 
+                //detach() + custom synchronization with condition variable "finished_objects" is way more efficient than looping join() for every thread
                 t_object.detach();
             }
+            //Main thread (scene) waits for all the objects to be renderized: the counter is incremented by 1 at the end of every parallel_render() above
             unsigned int object_number = objects.size();
             std::unique_lock<std::mutex> lock(scene_mutex);
-            scene_cv.wait(lock, [this, object_number]{return (finished_objects = object_number);});
+            scene_cv.wait(lock, [this, object_number]{return (finished_objects == object_number);});
             finished_objects = 0;
         }
+        //Launch old single-threaded version otherwise
         else {
             for (auto& o : objects){
                 o.render(rasterizer, view_);
@@ -108,9 +119,10 @@ public:
 
 private:
     friend class Object;
+    //Tools to enable synchronization without using join()
     std::mutex scene_mutex;
     std::condition_variable scene_cv;
-    std::atomic<unsigned int> finished_objects{0} ;
+    unsigned int finished_objects{0} ;
     std::vector<Object> objects;
 
 };
