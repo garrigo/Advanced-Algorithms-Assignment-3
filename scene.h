@@ -14,17 +14,13 @@ const std::array<float,16> Identity{1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1};
 
 
 template<class target_t>
-class Scene
-{
+class Scene {
 public:
 
-
-    
     Scene(): view_(Identity) {};
     std::array<float,16> view_;
     class Object{
     public:
-
 
 
         Object(const Object&) = delete;
@@ -39,7 +35,7 @@ public:
             pimpl->render(rasterizer,view,world_);
             rasterizer.workers.removeWorker();
             scene.finished_objects++;
-            scene.cv_.notify_one();
+            scene.scene_cv.notify_one();
         }
         std::array<float,16> world_;
 
@@ -92,15 +88,14 @@ public:
     void render(Rasterizer<target_t>& rasterizer) {
         if (rasterizer.workers.getMaxWorkers() > 1){
             for (auto& o : objects) {
-                //POSSIBLE THREAD
-                //Object level
+                //Object level multithreading
                 rasterizer.workers.addWorker();
                 std::thread t_object (&Object::parallel_render, &o, std::ref(rasterizer), std::ref(view_), std::ref(*this));  
                 t_object.detach();
             }
             unsigned int object_number = objects.size();
-            std::unique_lock<std::mutex> lock(m_);
-            cv_.wait(lock, [this, object_number]{return (finished_objects = object_number);});
+            std::unique_lock<std::mutex> lock(scene_mutex);
+            scene_cv.wait(lock, [this, object_number]{return (finished_objects = object_number);});
             finished_objects = 0;
         }
         else {
@@ -109,13 +104,13 @@ public:
             }
         }
     }
-protected:
-    friend class Object;
-    std::mutex m_;
-    std::condition_variable cv_;
-    std::atomic<unsigned int> finished_objects{0} ;
+
 
 private:
+    friend class Object;
+    std::mutex scene_mutex;
+    std::condition_variable scene_cv;
+    std::atomic<unsigned int> finished_objects{0} ;
     std::vector<Object> objects;
 
 };

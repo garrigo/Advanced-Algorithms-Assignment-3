@@ -9,7 +9,9 @@ using namespace pipeline3D;
 
 
 
-
+    constexpr unsigned int NUMBER_OF_WORKERS = 10;
+    constexpr unsigned int ADD_OBJECTS_ITERATIONS = 500;
+    constexpr unsigned int RENDER_ITERATIONS = 100;
 
 
     struct my_shader{
@@ -23,17 +25,17 @@ using namespace pipeline3D;
         const int w=150;
         const int h=50;    
         my_shader shader;
-        Rasterizer<char> rasterizer(4);
-        std::cout << "Number of worker-threads: " << rasterizer.workers.getMaxWorkers() << "\n";
+        Rasterizer<char> rasterizer(NUMBER_OF_WORKERS);
+        std::cout << "NUMBER OF WORKER-THREADS: " << rasterizer.workers.getMaxWorkers() << "\n";
         rasterizer.set_perspective_projection(-1,1,-1,1,1,2);
 
         std::vector<char> screen(w*h,'.');
         rasterizer.set_target(w,h,&screen[0]);
 
         std::vector<std::vector<std::array<Vertex,3>> > meshes;
-        for (int i=0; i< 100; i++){
+        for (int i=0; i< ADD_OBJECTS_ITERATIONS; i++){
             meshes.push_back(read_obj("cubeMod.obj"));
-            // meshes.push_back(read_obj("cube2.obj"));
+            meshes.push_back(read_obj("cube2.obj"));
         }
    
         Scene<char> scene;
@@ -45,28 +47,29 @@ using namespace pipeline3D;
         
         std::cout << "BEGINNING RENDER ...\n";
         auto start_time = std::chrono::high_resolution_clock::now();
-        for (int i=0; i!=1000; ++i) {
+
+        for (int i=0; i!=RENDER_ITERATIONS; ++i) {
             scene.render(rasterizer);
         }
         auto end_time = std::chrono::high_resolution_clock::now();
         double elapsed_time = std::chrono::duration<double>(end_time-start_time).count();
-        std::cout << "Total elapsed time: " << elapsed_time << '\n';
+        std::cout << "ELAPSED TIME: " << elapsed_time << '\n';
 
         // print out the screen with a frame around it
-        std::cout << "\n\n";
-        std::cout << '+';
-        for (int j=0; j!=w; ++j) std::cout << '-';
-        std::cout << "+\n";
+        // std::cout << "\n\n";
+        // std::cout << '+';
+        // for (int j=0; j!=w; ++j) std::cout << '-';
+        // std::cout << "+\n";
 
-        for (int i=0;i!=h;++i) {
-            std::cout << '|';
-            for (int j=0; j!=w; ++j) std::cout << screen[i*w+j];
-            std::cout << "|\n";
-        }
+        // for (int i=0;i!=h;++i) {
+        //     std::cout << '|';
+        //     for (int j=0; j!=w; ++j) std::cout << screen[i*w+j];
+        //     std::cout << "|\n";
+        // }
 
-        std::cout << '+';
-        for (int j=0; j!=w; ++j) std::cout << '-';
-        std::cout << "+\n";
+        // std::cout << '+';
+        // for (int j=0; j!=w; ++j) std::cout << '-';
+        // std::cout << "+\n";
 
         
         return 0;

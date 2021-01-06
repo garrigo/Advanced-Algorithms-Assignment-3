@@ -6,7 +6,7 @@
 #include<array>
 #include<type_traits>
 #include <deque>
-#include "worker.h"
+#include "sync.h"
 
 namespace pipeline3D {
 	
@@ -28,12 +28,12 @@ namespace pipeline3D {
             z_buffer.resize(w*h);
 			for (int i = 0; i<w*h; i++)
 				z_buffer[i] = 1.0f;
-			m_.clear();
-			m_.resize(w*h);
+			zbuffer_mutex.clear();
+			zbuffer_mutex.resize(w*h);
     	}
 
-		inline void setMaxWorkers (unsigned int max){
-			workers.setMaxWorkers(max);
+		inline void forceMaxWorkers (unsigned int max){
+			workers.forceMaxWorkers(max);
 		}
 	
     	std::vector<Target_t> get_z_buffer() { return std::move(z_buffer); }
@@ -190,8 +190,6 @@ namespace pipeline3D {
                     	const float step = 1.0f/(xl-xf);
                     	const float w0 = 1.0f + (xf-first)*step;
 
-						//POSSIBLE THREAD
-						//Scanline level
                         render_scanline(y,first,last,interpolate(v1,v2,w1f),interpolate(v1,v3,w1l),
                                         interpolatef(ndc1[2],ndc2[2],w1f),interpolatef(ndc1[2],ndc3[2],w1l), w0, step,
                                 shader, interpolate, perspective_correct);
@@ -355,13 +353,17 @@ namespace pipeline3D {
         	Vertex p;
         	int x=std::max(xl,0);
         	w += (xl-x)*step;
-			//POSSIBLE THREAD
-			//Fragment level
+
         	for (; x!=std::min(width,xr+1); ++x) {
                 const float ndcz=interpolatef(ndczl,ndczr,w);
 				const size_t cell = y*width+x;
-			    std::lock_guard<SpinLockMutex> lock(m_[cell]);
-
+			    std::lock_guard<SpinLockMutex> lock(zbuffer_mutex[cell]);
+            	if ((z_buffer[cell]+epsilon)<ndcz) continue;
+				z_buffer[cell] = ndcz;
+            	p=interpolate(vl,vr,w);
+            	perspective_correct(p);
+                target[cell] = shader(p);
+            	w -= step;
 				// z_buffer[cell].exchange( (((z_buffer[cell].load() + epsilon) < ndcz) ? z_buffer[cell].load() : ndcz), std::memory_order_relaxed);
 				// if (z_buffer[cell].load() == ndcz)
 				// {
@@ -369,13 +371,7 @@ namespace pipeline3D {
 				// 	perspective_correct(p);
 				// 	target[cell] = shader(p);
 				// 	w -= step;
-				// }
-            	if ((z_buffer[cell]+epsilon)<ndcz) continue;
-				z_buffer[cell] = ndcz;
-            	p=interpolate(vl,vr,w);
-            	perspective_correct(p);
-                target[cell] = shader(p);
-            	w -= step;				
+				// }				
         	}
     	}
 
@@ -383,10 +379,10 @@ namespace pipeline3D {
     	int width;
     	int height;
 
-	    std::deque<SpinLockMutex> m_;
+	    std::deque<SpinLockMutex> zbuffer_mutex;
     	Target_t* target;
-        // std::deque<std::atomic<float>> z_buffer;
 		std::vector<float> z_buffer;
+		// std::deque<std::atomic<float>> z_buffer;
 	};
 	
 }//pipeline3D
