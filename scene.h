@@ -101,7 +101,7 @@ public:
                 //If the worker handler of the rasterizer has reached full capacity of workers, addWorker waits for a removeWorker (above) to free a worker slot and a new thread can be created
                 rasterizer.worker_handler.addWorker();
                 std::thread t_object (&Object::parallel_render, &o, std::ref(rasterizer), std::ref(view_), std::ref(*this)); 
-                //detach() + custom synchronization with condition variable "finished_objects" is way more efficient than looping join() for every thread
+                //detach() + custom synchronization with condition variable "finished_objects" is more efficient than looping join() for every thread
                 t_object.detach();
             }
             //Main thread (scene) waits for all the objects to be renderized: the counter is incremented by 1 at the end of every parallel_render() above

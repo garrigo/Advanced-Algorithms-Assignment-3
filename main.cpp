@@ -8,8 +8,8 @@ using namespace pipeline3D;
 
     //Values for testing, indicating number of workers used by the rasterizer, number of iterations of the add object loop, number of iterations of render loop
     constexpr unsigned int NUMBER_OF_WORKERS = 10;
-    constexpr unsigned int ADD_OBJECTS_ITERATIONS = 1;
-    constexpr unsigned int RENDER_ITERATIONS = 10000;
+    constexpr unsigned int ADD_OBJECTS_ITERATIONS = 100;
+    constexpr unsigned int RENDER_ITERATIONS = 1000;
 
 
     struct my_shader{
@@ -62,20 +62,20 @@ using namespace pipeline3D;
 
 
         // print out the screen with a frame around it
-        // std::cout << "\n\n";
-        // std::cout << '+';
-        // for (int j=0; j!=w; ++j) std::cout << '-';
-        // std::cout << "+\n";
+        std::cout << "\n\n";
+        std::cout << '+';
+        for (int j=0; j!=w; ++j) std::cout << '-';
+        std::cout << "+\n";
 
-        // for (int i=0;i!=h;++i) {
-        //     std::cout << '|';
-        //     for (int j=0; j!=w; ++j) std::cout << screen[i*w+j];
-        //     std::cout << "|\n";
-        // }
+        for (int i=0;i!=h;++i) {
+            std::cout << '|';
+            for (int j=0; j!=w; ++j) std::cout << screen[i*w+j];
+            std::cout << "|\n";
+        }
 
-        // std::cout << '+';
-        // for (int j=0; j!=w; ++j) std::cout << '-';
-        // std::cout << "+\n";
+        std::cout << '+';
+        for (int j=0; j!=w; ++j) std::cout << '-';
+        std::cout << "+\n";
 
         
         return 0;
