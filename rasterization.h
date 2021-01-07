@@ -19,60 +19,61 @@ namespace pipeline3D {
 	public:
 
 		/*
-		 *
-		 * 
-		 * 
+		 * Synchronizer class used to synchronize the threads for the objects
+		 * When a new thread is asked to be created, the synchronizer will check that there is still space available (adder)
+		 * When a thread has fullfilled its job, it will be removed from the pool and possibly create space for new ones (remover)
 		 */
 		class Synchronizer{
 			private:
 				std::condition_variable cv_;
 				unsigned short int nThreads_ = std::thread::hardware_concurrency();
 				unsigned short int usedThreads_ = 0;
+				// flag for synchronization
 				bool canAdd = true;
+				
+				std::mutex mtx_;
 
 			public:
 				Synchronizer() = default;
 
-				Synchronizer(unsigned short int nThreads){
-					if (nThreads < nThreads_)
-						nThreads_ = nThreads;
-				}
 				Synchronizer(const Synchronizer & synch) : nThreads_(synch.nThreads_) {}
 
+				// Set thread number. returns a warning if high number of thread is given
 				inline void setNThreads(unsigned short int nThreads){
-					// Check if high number of thread is inserted
+					// Check if high number of thread is inserted and eventually warn user
 					if (nThreads > std::thread::hardware_concurrency())
 						std::cout << "WARNING: You're setting more threads than the maximum hardware supported ("<< std::thread::hardware_concurrency() <<"), this may decrease performance."<<std::endl;
-					this->nThreads_=nThreads;}
+					this->nThreads_=nThreads;
+				}
 
+				// Adding a new thread to the pool
 				inline void adder(){
+					// Lock the mutex and wait that thread spawn is possible
 					std::unique_lock<std::mutex> lock (mtx_);
 					cv_.wait(lock, [this](){return canAdd;});
 				
-					// add 1 to used threads number
+					// increase current used threads and update the flag
 					usedThreads_++;
 					canAdd = (nThreads_ > usedThreads_);
 
-					//std::cout << "New thread correctly loaded."<<std::endl;
-
 				}
 
+				// Removing a thread from the pool
 				inline void remover(){
 					std::unique_lock<std::mutex> lock (mtx_);
 					
-					// decrease 1 to used threads number
+					// decrease current used threads
 					usedThreads_--;
 					canAdd = (nThreads_ > usedThreads_);
+					// notify the removal to the next thread and allow the synchronizer to go on
 					cv_.notify_one();
-
-					//std::cout<< "Thread removed."<<std::endl;
 				}
 
 				inline unsigned short int getNThreads(){return nThreads_;}
 
-				std::mutex mtx_;
 		};
 
+		// Wrapper for setting the desired threads number
 		void set_n_thread(short int n){synchro.setNThreads(n);}
 	
     	void set_target(int w, int h, Target_t* t) {
@@ -373,6 +374,8 @@ namespace pipeline3D {
 	
     	std::array<float,16> projection_matrix;
 
+		// A synchronizer is put in the rasterizer so that the user can set the preferred number of threads in an intuitive way
+		// This also comes handy, as a rasterizer is passed to the scene render and so can be easily called
 		Synchronizer synchro;
 	
 	private:
@@ -393,6 +396,8 @@ namespace pipeline3D {
         	return v1*w + v2*(1.0f-w);
     	}
 
+		// render_scanline is called by render_verticies, which is called by the render method in the scene Object
+		// this means that we have to manage a critical zone in here (buffers can be overwritten)
         template<class Vertex, class Shader, class Interpolator, class PerspCorrector>
         void render_scanline(int y, int xl, int xr, const Vertex& vl, const Vertex& vr, float ndczl, float ndczr, float w, float step,
                              Shader shader, Interpolator interpolate, PerspCorrector perspective_correct) {
@@ -403,8 +408,8 @@ namespace pipeline3D {
         	int x=std::max(xl,0);
         	w += (xl-x)*step;
         	for (; x!=std::min(width,xr+1); ++x) {
-				// Lock to avoid the overriding of buffers
-				std::unique_lock<std::mutex> lock(mtx);
+				// Lock to avoid the wrong overriding of buffers
+				std::unique_lock<std::mutex> lock(mtx_);
                 const float ndcz=interpolatef(ndczl,ndczr,w);
             	if ((z_buffer[y*width+x]+epsilon)>=ndcz){
 					Vertex p=interpolate(vl,vr,w);
@@ -424,7 +429,11 @@ namespace pipeline3D {
 	
     	Target_t* target;
         std::vector<float> z_buffer;
-		std::mutex mtx;
+
+		// mutex used to manage the shared critical resources of the z_buffer and the target
+		// if not properly locked, multiple threads could be entering the if at the same time and edit values
+		// this could cause some data inconsistency and result in a wrong print
+		std::mutex mtx_;
 
 		
 	};

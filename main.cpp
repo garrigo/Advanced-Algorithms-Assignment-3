@@ -25,7 +25,8 @@ using namespace std;
 
         my_shader shader;
         Rasterizer<char> rasterizer;
-        rasterizer.set_n_thread(100);
+        // User sets the number of threads that he wants. If no number is specified, the max hardware number is used
+        rasterizer.set_n_thread(6);
         rasterizer.set_perspective_projection(-1,1,-1,1,1,2);
 
         std::vector<char> screen(w*h,'.');
@@ -38,22 +39,24 @@ using namespace std;
         Scene<char> scene;
         scene.view_={0.5f,0.0f,0.0f,0.7f,0.0f,0.5f,0.0f,0.7f,0.0f,0.0f,0.5f,0.9f,0.0f,0.0f,0.0f,1.0f};
 
-        // Set number of objects that you want to add to the scene 
+        // Set number of objects that you want to add to the scene (benchmark)
+        // for simplicity, we'll just load the same object NOBJECT times in the scene
         constexpr int NOBJECT = 1000;
         for (int i = 0; i < NOBJECT; i++)
             scene.add_object(Scene<char>::Object(std::move(mesh),shader));
 
-        std::cout << "Rendering with "<<  rasterizer.synchro.getNThreads() <<" threads...\n";
+        std::cout << "Rendering with "<<  rasterizer.synchro.getNThreads() <<" threads.\n";
         auto start = std::chrono::high_resolution_clock::now();
 
-        // Set number of renders to perform
+        // Set number of renders to perform (benchmark)
+        // again, this is done just to measure the impact of the parallelization
         constexpr int NRENDER = 100;
         for (int i= 0; i < NRENDER; i++)
             scene.render(rasterizer);
 
         auto end = std::chrono::high_resolution_clock::now();
         float total_time = std::chrono::duration<float>(end-start).count();
-        std::cout << "Printed "<< NOBJECT << " objects " << NRENDER <<" times, in: " << total_time << '\n';
+        std::cout << "Printed "<< NOBJECT << " objects " << NRENDER <<" times, in: " << total_time << " seconds.\n";
 
 
         // print out the screen with a frame around it

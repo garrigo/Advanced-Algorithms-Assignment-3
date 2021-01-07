@@ -29,9 +29,10 @@ public:
         Object(Mesh &&mesh, Shader&& shader, Textures&&... textures) :
             pimpl(std::make_unique<concrete_Object_impl<Mesh,Shader,Textures...>>(std::forward<Mesh>(mesh), std::forward<Shader>(shader), std::forward<Textures>(textures)...)), world_(Identity) {}
 
+        // Modified the render method by adding the synchronizer remover call
         void render(Rasterizer<target_t>& rasterizer, const std::array<float,16>& view) {
             pimpl->render(rasterizer,view,world_);
-            rasterizer.synchro.remover();
+            rasterizer.synchro.remover(); // when an objects has been rendered, call the remover and notify that a new thread is available to work
             }
 
         std::array<float,16> world_;
@@ -81,21 +82,21 @@ public:
     auto begin() {return objects.begin();}
     auto end() {return objects.end();}
 
+    // Added parallelization here
     void render(Rasterizer<target_t>& rasterizer) {
+        // Preparing a vector of threads
         std::vector<std::thread> v_threads;
+        // for each object, load the render method in a thread by adding it to the previous vector
+        // the synchronizer will stop if too many objects are loaded in the threads (used number must be less or equal to the total number of threads)
+        // the remover is called in the render method
         for (auto& o: objects){
             rasterizer.synchro.adder();
-            v_threads.push_back(std::thread (&Object::render, &o, std::ref(rasterizer), std::ref(view_)));
+            v_threads.emplace_back(&Object::render, &o, std::ref(rasterizer), std::ref(view_));
         }
 
+        // join the threads 
         for (auto& t: v_threads)
             t.join();
-
-
-
-        /*for (auto& o : objects) {
-            o.render(rasterizer,view_);
-        }*/
     }
 
 private:
