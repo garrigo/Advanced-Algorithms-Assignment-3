@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -Wall -g -pthread
+CFLAGS = -pthread
  
 # ****************************************************
 # Targets needed to bring the executable up to date
