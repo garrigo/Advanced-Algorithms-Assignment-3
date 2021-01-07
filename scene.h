@@ -2,6 +2,7 @@
 #define SCENE_H
 #include<memory>
 #include<utility>
+#include<thread>
 #include"rasterization.h"
 
 namespace pipeline3D {
@@ -28,9 +29,12 @@ public:
         Object(Mesh &&mesh, Shader&& shader, Textures&&... textures) :
             pimpl(std::make_unique<concrete_Object_impl<Mesh,Shader,Textures...>>(std::forward<Mesh>(mesh), std::forward<Shader>(shader), std::forward<Textures>(textures)...)), world_(Identity) {}
 
-          void render(Rasterizer<target_t>& rasterizer, const std::array<float,16>& view) {pimpl->render(rasterizer,view,world_);}
+        void render(Rasterizer<target_t>& rasterizer, const std::array<float,16>& view) {
+            pimpl->render(rasterizer,view,world_);
+            rasterizer.synchro.remover();
+            }
 
-          std::array<float,16> world_;
+        std::array<float,16> world_;
 
     private:
 
@@ -78,9 +82,20 @@ public:
     auto end() {return objects.end();}
 
     void render(Rasterizer<target_t>& rasterizer) {
-        for (auto& o : objects) {
-            o.render(rasterizer,view_);
+        std::vector<std::thread> v_threads;
+        for (auto& o: objects){
+            rasterizer.synchro.adder();
+            v_threads.push_back(std::thread (&Object::render, &o, std::ref(rasterizer), std::ref(view_)));
         }
+
+        for (auto& t: v_threads)
+            t.join();
+
+
+
+        /*for (auto& o : objects) {
+            o.render(rasterizer,view_);
+        }*/
     }
 
 private:

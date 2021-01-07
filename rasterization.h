@@ -5,6 +5,9 @@
 #include<vector>
 #include<array>
 #include<type_traits>
+#include<condition_variable>
+#include<thread>
+#include<iostream>
 
 
 namespace pipeline3D {
@@ -14,6 +17,63 @@ namespace pipeline3D {
 	template<class Target_t>
 	class Rasterizer {
 	public:
+
+		/*
+		 *
+		 * 
+		 * 
+		 */
+		class Synchronizer{
+			private:
+				std::condition_variable cv_;
+				unsigned short int nThreads_ = std::thread::hardware_concurrency();
+				unsigned short int usedThreads_ = 0;
+				bool canAdd = true;
+
+			public:
+				Synchronizer() = default;
+
+				Synchronizer(unsigned short int nThreads){
+					if (nThreads < nThreads_)
+						nThreads_ = nThreads;
+				}
+				Synchronizer(const Synchronizer & synch) : nThreads_(synch.nThreads_) {}
+
+				inline void setNThreads(unsigned short int nThreads){
+					// Check if high number of thread is inserted
+					if (nThreads > std::thread::hardware_concurrency())
+						std::cout << "WARNING: You're setting more threads than the maximum hardware supported ("<< std::thread::hardware_concurrency() <<"), this may decrease performance."<<std::endl;
+					this->nThreads_=nThreads;}
+
+				inline void adder(){
+					std::unique_lock<std::mutex> lock (mtx_);
+					cv_.wait(lock, [this](){return canAdd;});
+				
+					// add 1 to used threads number
+					usedThreads_++;
+					canAdd = (nThreads_ > usedThreads_);
+
+					//std::cout << "New thread correctly loaded."<<std::endl;
+
+				}
+
+				inline void remover(){
+					std::unique_lock<std::mutex> lock (mtx_);
+					
+					// decrease 1 to used threads number
+					usedThreads_--;
+					canAdd = (nThreads_ > usedThreads_);
+					cv_.notify_one();
+
+					//std::cout<< "Thread removed."<<std::endl;
+				}
+
+				inline unsigned short int getNThreads(){return nThreads_;}
+
+				std::mutex mtx_;
+		};
+
+		void set_n_thread(short int n){synchro.setNThreads(n);}
 	
     	void set_target(int w, int h, Target_t* t) {
         	width=w;
@@ -312,6 +372,8 @@ namespace pipeline3D {
     	}
 	
     	std::array<float,16> projection_matrix;
+
+		Synchronizer synchro;
 	
 	private:
 	
@@ -341,13 +403,16 @@ namespace pipeline3D {
         	int x=std::max(xl,0);
         	w += (xl-x)*step;
         	for (; x!=std::min(width,xr+1); ++x) {
+				// Lock to avoid the overriding of buffers
+				std::unique_lock<std::mutex> lock(mtx);
                 const float ndcz=interpolatef(ndczl,ndczr,w);
-            	if ((z_buffer[y*width+x]+epsilon)<ndcz) continue;
-            	Vertex p=interpolate(vl,vr,w);
-            	perspective_correct(p);
-                target[y*width+x] = shader(p);
-            	z_buffer[y*width+x]=ndcz;
-            	w -= step;
+            	if ((z_buffer[y*width+x]+epsilon)>=ndcz){
+					Vertex p=interpolate(vl,vr,w);
+					perspective_correct(p);
+					target[y*width+x] = shader(p);
+					z_buffer[y*width+x]=ndcz;
+					w -= step;
+				}         	
         	}
 	
     	}
@@ -359,6 +424,9 @@ namespace pipeline3D {
 	
     	Target_t* target;
         std::vector<float> z_buffer;
+		std::mutex mtx;
+
+		
 	};
 	
 }//pipeline3D

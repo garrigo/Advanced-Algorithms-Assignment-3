@@ -25,6 +25,7 @@ using namespace std;
 
         my_shader shader;
         Rasterizer<char> rasterizer;
+        rasterizer.set_n_thread(100);
         rasterizer.set_perspective_projection(-1,1,-1,1,1,2);
 
         std::vector<char> screen(w*h,'.');
@@ -36,8 +37,23 @@ using namespace std;
    
         Scene<char> scene;
         scene.view_={0.5f,0.0f,0.0f,0.7f,0.0f,0.5f,0.0f,0.7f,0.0f,0.0f,0.5f,0.9f,0.0f,0.0f,0.0f,1.0f};
-        scene.add_object(Scene<char>::Object(std::move(mesh),shader));
-        scene.render(rasterizer);
+
+        // Set number of objects that you want to add to the scene 
+        constexpr int NOBJECT = 1000;
+        for (int i = 0; i < NOBJECT; i++)
+            scene.add_object(Scene<char>::Object(std::move(mesh),shader));
+
+        std::cout << "Rendering with "<<  rasterizer.synchro.getNThreads() <<" threads...\n";
+        auto start = std::chrono::high_resolution_clock::now();
+
+        // Set number of renders to perform
+        constexpr int NRENDER = 100;
+        for (int i= 0; i < NRENDER; i++)
+            scene.render(rasterizer);
+
+        auto end = std::chrono::high_resolution_clock::now();
+        float total_time = std::chrono::duration<float>(end-start).count();
+        std::cout << "Printed "<< NOBJECT << " objects " << NRENDER <<" times, in: " << total_time << '\n';
 
 
         // print out the screen with a frame around it

@@ -5,3 +5,4 @@ main.obj
 .DS_Store
 *.exe
 main.obj
+.vscode/settings.json
