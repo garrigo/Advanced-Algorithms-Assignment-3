@@ -43,7 +43,7 @@ namespace pipeline3D {
 					// Check if high number of thread is inserted and eventually warn user
 					if (nThreads > std::thread::hardware_concurrency())
 						std::cout << "WARNING: You're setting more threads than the maximum hardware supported ("<< std::thread::hardware_concurrency() <<"), this may decrease performance."<<std::endl;
-					this->nThreads_=nThreads;
+					nThreads_=nThreads;
 				}
 
 				// Adding a new thread to the pool
@@ -75,6 +75,8 @@ namespace pipeline3D {
 
 		// Wrapper for setting the desired threads number
 		void set_n_thread(short int n){synchro.setNThreads(n);}
+		// Wrapper for getting the setted threads number
+		unsigned short int get_n_thread(){return synchro.getNThreads();}
 	
     	void set_target(int w, int h, Target_t* t) {
         	width=w;

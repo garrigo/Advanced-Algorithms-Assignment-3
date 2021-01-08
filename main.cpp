@@ -18,6 +18,9 @@ using namespace std;
         }
     };
 
+    // number of objectes and renders to perform
+    constexpr int NOBJECT = 1000;
+    constexpr int NRENDER = 100;
 
     int main() {
         const int w=150;
@@ -26,7 +29,7 @@ using namespace std;
         my_shader shader;
         Rasterizer<char> rasterizer;
         // User sets the number of threads that he wants. If no number is specified, the max hardware number is used
-        rasterizer.set_n_thread(6);
+        rasterizer.set_n_thread(5);
         rasterizer.set_perspective_projection(-1,1,-1,1,1,2);
 
         std::vector<char> screen(w*h,'.');
@@ -41,16 +44,15 @@ using namespace std;
 
         // Set number of objects that you want to add to the scene (benchmark)
         // for simplicity, we'll just load the same object NOBJECT times in the scene
-        constexpr int NOBJECT = 1000;
+        
         for (int i = 0; i < NOBJECT; i++)
             scene.add_object(Scene<char>::Object(std::move(mesh),shader));
 
-        std::cout << "Rendering with "<<  rasterizer.synchro.getNThreads() <<" threads.\n";
+        std::cout << "Rendering with "<<  rasterizer.get_n_thread() <<" threads.\n";
         auto start = std::chrono::high_resolution_clock::now();
 
         // Set number of renders to perform (benchmark)
         // again, this is done just to measure the impact of the parallelization
-        constexpr int NRENDER = 100;
         for (int i= 0; i < NRENDER; i++)
             scene.render(rasterizer);
 
