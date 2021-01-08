@@ -93,10 +93,12 @@ public:
 
     void render(Rasterizer<target_t>& rasterizer) {
         unsigned int object_number = objects.size();
+        
         /*Version dispatcher: if the number of user-defined workers is greater than 1 (and so is the number of objects),
           the multi-threaded version is launched*/
         if (rasterizer.worker_handler.getMaxWorkers() > 1 && object_number > 1){
             for (auto& o : objects) {
+                
                 //Object level multithreading
                 //If the worker handler of the rasterizer has reached full capacity of workers, addWorker waits for a removeWorker (above) to free a worker slot and a new thread can be created
                 rasterizer.worker_handler.addWorker();
@@ -104,8 +106,7 @@ public:
                 //detach() + custom synchronization with condition variable "finished_objects" is more efficient than looping join() for every thread
                 t_object.detach();
             }
-            //Main thread (scene) waits for all the objects to be renderized: the counter is incremented by 1 at the end of every parallel_render() above
-            
+            //Main thread (scene) waits for all the objects to be renderized: the counter is incremented by 1 at the end of every parallel_render() above       
             std::unique_lock<std::mutex> lock(scene_mutex);
             scene_cv.wait(lock, [this, object_number]{return (finished_objects == object_number);});
             finished_objects = 0;

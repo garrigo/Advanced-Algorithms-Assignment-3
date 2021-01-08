@@ -27,10 +27,7 @@ namespace pipeline3D {
         	target=t;
         	z_buffer.clear();
             z_buffer.resize(w*h, 1.0f);
-			// for (int i = 0; i<w*h; i++)
-			// 	z_buffer[i] = 1.0f;
 			//Setting the std::deque of mutex according to the size of z buffer
-			zbuffer_mutex.clear();
 			zbuffer_mutex.resize(w*h);
     	}
 		//Wrapper to get max workers from the WorkerHandler instance
@@ -360,13 +357,13 @@ namespace pipeline3D {
         	int x=std::max(xl,0);
         	w += (xl-x)*step;
 
-        	for (; x!=std::min(width,xr+1); ++x) {
-                const float ndcz=interpolatef(ndczl,ndczr,w);
+			for (; x!=std::min(width,xr+1); ++x) {
+				const float ndcz=interpolatef(ndczl,ndczr,w);
 				const unsigned int cell = y*width+x;
 				//Only critical section of the code, 2 or more threads could read and/or write a z_buffer[cell] with a non-synchronized value
 				//target[cell] is affected too, must be synchronized
-			    std::lock_guard<SpinLockMutex> lock(zbuffer_mutex[cell]);
-            	if ((z_buffer[cell]+epsilon)<ndcz) continue;
+				std::lock_guard<SpinLockMutex> lock(zbuffer_mutex[cell]);
+				if ((z_buffer[cell]+epsilon)<ndcz) continue;
 				z_buffer[cell] = ndcz;
             	p=interpolate(vl,vr,w);
             	perspective_correct(p);

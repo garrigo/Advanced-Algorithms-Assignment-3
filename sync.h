@@ -46,10 +46,10 @@ namespace pipeline3D {
                 return max_workers;
             }
             //Method that allows to force the maximum number of workers despite the hardware limit of physical threads
-            inline void forceMaxWorkers (const unsigned int w){
-                if (w > max_hardware)
+            inline void forceMaxWorkers (const unsigned int max){
+                if (max > max_hardware)
                     std::cout << "WARNING! Optimal number of worker-threads: " << max_hardware << "\n";
-                max_workers = w;
+                max_workers = max;
             }
             //Waits for a free worker slot if the used workers counter is equal to the maximum number of workers; when released increments the former atomically (worker mutex)
             inline void addWorker(){
