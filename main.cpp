@@ -19,7 +19,7 @@ using namespace std;
     };
 
     // number of objectes and renders to perform
-    constexpr int NOBJECT = 1000;
+    constexpr int NOBJECT = 100;
     constexpr int NRENDER = 100;
 
     int main() {
@@ -46,8 +46,9 @@ using namespace std;
         // for simplicity, we'll just load the same object NOBJECT times in the scene
         
         for (int i = 0; i < NOBJECT; i++)
-            scene.add_object(Scene<char>::Object(std::move(mesh),shader));
-
+            //scene.add_object(Scene<char>::Object(std::move(mesh),shader));
+            scene.add_object(Scene<char>::Object(read_obj("cubeMod.obj"),shader));
+            
         std::cout << "Rendering with "<<  rasterizer.get_n_thread() <<" threads.\n";
         auto start = std::chrono::high_resolution_clock::now();
 
